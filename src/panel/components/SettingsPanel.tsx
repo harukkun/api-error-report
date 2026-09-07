@@ -40,11 +40,11 @@ export function SettingsPanel({ settings, onChange, onReset }: Props) {
         </label>
         <label className="field-item">
           <input type="checkbox" checked={settings.xhrOnlyDefault} onChange={(e) => onChange({ xhrOnlyDefault: e.target.checked })} />
-          <span>XHR/fetch만 표시</span>
+          <span>API 요청만 표시 (XHR/fetch + 에러난 페이지 요청)</span>
         </label>
         <label className="field-item">
           <input type="checkbox" checked={settings.hidePreflight} onChange={(e) => onChange({ hidePreflight: e.target.checked })} />
-          <span>OPTIONS(preflight) 숨김</span>
+          <span>성공한 OPTIONS(preflight) 숨김 (실패한 preflight는 항상 표시)</span>
         </label>
         <label className="field-item">
           <input type="checkbox" checked={settings.preserveLog} onChange={(e) => onChange({ preserveLog: e.target.checked })} />

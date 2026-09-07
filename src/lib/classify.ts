@@ -1,9 +1,45 @@
 import type { CapturedRequest } from "./har";
 
-const XHR_TYPES = new Set(["xhr", "fetch"]);
+const API_TYPES = new Set(["xhr", "fetch"]);
+/** 명확히 API가 아닌 리소스 타입 */
+const NON_API_TYPES = new Set([
+  "document",
+  "stylesheet",
+  "image",
+  "media",
+  "font",
+  "script",
+  "texttrack",
+  "eventsource",
+  "websocket",
+  "manifest",
+  "signedexchange",
+  "ping",
+  "cspviolationreport",
+  "prefetch",
+]);
+const API_MIME = /json|graphql|xml|x-www-form-urlencoded|protobuf|grpc/i;
 
-export function isXhrLike(req: CapturedRequest): boolean {
-  return XHR_TYPES.has(req.resourceType.toLowerCase());
+/**
+ * XHR/fetch 판별. HAR의 _resourceType이 없으면(Chrome이 안 넘겨주는 경우)
+ * 요청/응답 헤더로 API 호출인지 추정한다.
+ */
+export function isApiLike(req: CapturedRequest): boolean {
+  const type = req.resourceType.toLowerCase();
+  if (API_TYPES.has(type)) return true;
+  // CORS preflight는 API 호출의 일부 (실패 시 CORS 원인 파악에 필요)
+  if (type === "preflight" || (isPreflight(req) && req.requestHeaders["access-control-request-method"])) return true;
+  if (NON_API_TYPES.has(type)) return false;
+  const h = req.requestHeaders;
+  if (h["x-requested-with"]) return true;
+  if (/json|graphql/i.test(h.accept ?? "")) return true;
+  if (API_MIME.test(h["content-type"] ?? "")) return true;
+  if (API_MIME.test(req.responseHeaders["content-type"] ?? "")) return true;
+  return false;
+}
+
+export function isDocument(req: CapturedRequest): boolean {
+  return req.resourceType.toLowerCase() === "document";
 }
 
 export function isError(req: CapturedRequest): boolean {

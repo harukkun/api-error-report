@@ -1,4 +1,4 @@
-import type { Body } from "./har";
+import type { Body, HarPostParam } from "./har";
 
 export function prettyJson(text: string): string {
   try {
@@ -19,15 +19,53 @@ export function isJsonLike(mimeType: string, text: string): boolean {
   return (t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"));
 }
 
+export function paramsToObject(params: HarPostParam[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of params) {
+    const v = p.fileName !== undefined ? `[file] ${p.fileName}${p.contentType ? ` (${p.contentType})` : ""}` : p.value ?? "";
+    out[p.name] = p.name in out ? `${out[p.name]}, ${v}` : v;
+  }
+  return out;
+}
+
+export function isFormUrlencoded(mimeType: string): boolean {
+  return /x-www-form-urlencoded/i.test(mimeType);
+}
+
 export function formatBody(body: Body | undefined, max: number): string | undefined {
   if (!body) return undefined;
   if (body.encoding === "base64") {
     const bytes = Math.floor((body.text.length * 3) / 4);
     return `[binary ${body.mimeType || "unknown"}, ${bytes} bytes]`;
   }
+  if (body.params && body.params.length > 0) {
+    return truncate(JSON.stringify(paramsToObject(body.params), null, 2), max);
+  }
   if (!body.text.trim()) return undefined;
+  if (isFormUrlencoded(body.mimeType)) {
+    const obj: Record<string, string> = {};
+    new URLSearchParams(body.text).forEach((v, k) => {
+      obj[k] = k in obj ? `${obj[k]}, ${v}` : v;
+    });
+    return truncate(JSON.stringify(obj, null, 2), max);
+  }
   const text = isJsonLike(body.mimeType, body.text) ? prettyJson(body.text) : body.text;
   return truncate(text, max);
+}
+
+/** 남은/지난 시간을 한국어로. 예: "3시간 12분 남음", "12분 전 만료" */
+export function formatRelative(targetMs: number, nowMs: number): string {
+  const diff = targetMs - nowMs;
+  const abs = Math.abs(diff);
+  const m = Math.floor(abs / 60_000);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  let span: string;
+  if (d >= 1) span = `${d}일 ${h % 24}시간`;
+  else if (h >= 1) span = `${h}시간 ${m % 60}분`;
+  else if (m >= 1) span = `${m}분`;
+  else span = `${Math.floor(abs / 1000)}초`;
+  return diff >= 0 ? `${span} 남음` : `${span} 전 만료`;
 }
 
 export function bodyLang(body: Body | undefined): string {

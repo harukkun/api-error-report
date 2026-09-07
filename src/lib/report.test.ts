@@ -60,6 +60,36 @@ describe("buildReport", () => {
   });
 });
 
+describe("buildReport memo", () => {
+  it("inserts memo right after title", () => {
+    const md = buildReport(makeRequest(), ["url"], ctx, { memo: "마이페이지에서 탈퇴 클릭" });
+    expect(md.startsWith("🚨 API 에러 정보\n\n메모:\n마이페이지에서 탈퇴 클릭\n\n[Request]\n")).toBe(true);
+  });
+  it("ignores blank memo", () => {
+    expect(buildReport(makeRequest(), ["url"], ctx, { memo: "   " })).not.toContain("메모");
+    expect(buildReport(makeRequest(), ["url"], ctx)).not.toContain("메모");
+  });
+});
+
+describe("tokenExpiry field", () => {
+  const b64url = (o: unknown) => btoa(JSON.stringify(o)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const now = Date.UTC(2026, 8, 7, 3, 0, 0); // 2026-09-07T03:00:00Z
+  const exp = Math.floor(now / 1000) + 42 * 60;
+  const jwt = `${b64url({ alg: "HS256" })}.${b64url({ exp })}.sig`;
+
+  it("shows expiry with relative time and no raw token", () => {
+    const md = buildReport(makeRequest({ requestHeaders: { authorization: `Bearer ${jwt}` } }), ["tokenExpiry"], { ...ctx, now });
+    expect(md).toMatch(/토큰 만료: 2026-09-07 \d\d:42:00\.000 [+-]\d\d:\d\d \(42분 남음\)/);
+    expect(md).not.toContain(jwt);
+  });
+  it("is omitted for opaque tokens", () => {
+    expect(buildReport(makeRequest({ requestHeaders: { authorization: "Bearer opaque" } }), ["tokenExpiry"], ctx)).not.toContain("토큰 만료");
+  });
+  it("is not selected by default", () => {
+    expect(DEFAULT_FIELD_IDS).not.toContain("tokenExpiry");
+  });
+});
+
 describe("mergeSelectedFieldIds", () => {
   it("returns defaults when nothing saved", () => {
     expect(mergeSelectedFieldIds(undefined, undefined)).toEqual(DEFAULT_FIELD_IDS);

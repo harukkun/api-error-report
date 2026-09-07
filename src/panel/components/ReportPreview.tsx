@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 
 interface Props {
-  markdown: string;
+  report: string;
   mask: boolean;
   onMaskChange: (mask: boolean) => void;
   requestKey: string;
+  memo: string;
+  onMemoChange: (memo: string) => void;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -24,15 +26,15 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function ReportPreview({ markdown, mask, onMaskChange, requestKey }: Props) {
+export function ReportPreview({ report, mask, onMaskChange, requestKey, memo, onMemoChange }: Props) {
   const [copied, setCopied] = useState<"idle" | "ok" | "fail">("idle");
 
   useEffect(() => {
     setCopied("idle");
-  }, [requestKey, markdown]);
+  }, [requestKey, report]);
 
   const onCopy = async () => {
-    const ok = await copyText(markdown);
+    const ok = await copyText(report);
     setCopied(ok ? "ok" : "fail");
     setTimeout(() => setCopied("idle"), 1500);
   };
@@ -49,7 +51,15 @@ export function ReportPreview({ markdown, mask, onMaskChange, requestKey }: Prop
           {copied === "ok" ? "복사됨 ✓" : copied === "fail" ? "복사 실패" : "복사"}
         </button>
       </div>
-      <textarea className="report-body" readOnly value={markdown} spellCheck={false} />
+      <textarea
+        className="memo"
+        rows={2}
+        placeholder="메모 / 재현 단계 (선택) — 예: 마이페이지에서 회원탈퇴 버튼 클릭 시 발생"
+        value={memo}
+        onChange={(e) => onMemoChange(e.target.value)}
+        aria-label="메모"
+      />
+      <textarea className="report-body" readOnly value={report} spellCheck={false} />
     </div>
   );
 }

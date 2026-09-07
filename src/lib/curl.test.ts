@@ -21,6 +21,23 @@ describe("buildCurl", () => {
     const curl = buildCurl(makeRequest(), { mask: true });
     expect(curl).toContain("-H 'authorization: Bearer eyJhbG...(masked)...Xk9Q'");
   });
+  it("uses -F for multipart and drops content-type header", () => {
+    const curl = buildCurl(
+      makeRequest({
+        requestHeaders: { "content-type": "multipart/form-data; boundary=----X", accept: "*/*" },
+        requestBody: {
+          mimeType: "multipart/form-data; boundary=----X",
+          text: "",
+          params: [{ name: "id", value: "1" }, { name: "photo", fileName: "a.jpg", contentType: "image/jpeg" }],
+        },
+      }),
+      { mask: true },
+    );
+    expect(curl).toContain("-F 'id=1'");
+    expect(curl).toContain("-F 'photo=@a.jpg'");
+    expect(curl).not.toContain("content-type");
+    expect(curl).not.toContain("--data-raw");
+  });
   it("omits body for GET without payload", () => {
     const curl = buildCurl(makeRequest({ method: "GET", requestBody: undefined }), { mask: true });
     expect(curl).not.toContain("--data-raw");

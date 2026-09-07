@@ -10,10 +10,22 @@ function renderField(field: ReportField, value: string): string {
   return `${field.label}:\n${value}`;
 }
 
+export interface ReportOptions {
+  /** 재현 단계/메모. 비어있지 않으면 제목 아래에 항상 포함 */
+  memo?: string;
+}
+
 /** 선택된 필드를 플레인 텍스트 리포트로 조합 */
-export function buildReport(req: CapturedRequest, selectedIds: string[], ctx: RenderContext): string {
+export function buildReport(
+  req: CapturedRequest,
+  selectedIds: string[],
+  ctx: RenderContext,
+  opts: ReportOptions = {},
+): string {
   const selected = new Set(selectedIds);
   const sections: string[] = [REPORT_TITLE];
+  const memo = opts.memo?.trim();
+  if (memo) sections.push(`메모:\n${memo}`);
 
   for (const group of GROUP_ORDER) {
     const fields = Object.values(FIELD_MAP).filter((f) => f.group === group && selected.has(f.id));

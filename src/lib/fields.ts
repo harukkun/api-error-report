@@ -1,7 +1,8 @@
 import type { CapturedRequest } from "./har";
 import { detectEnv } from "./classify";
 import { buildCurl } from "./curl";
-import { formatBody, formatDate, formatHeaders } from "./format";
+import { formatBody, formatDate, formatHeaders, formatRelative } from "./format";
+import { jwtExpiryMs } from "./jwt";
 import { maskHeaders, maskSecret, SENSITIVE_REQUEST_HEADERS, SENSITIVE_RESPONSE_HEADERS } from "./mask";
 
 export type FieldGroup = "general" | "request" | "response" | "extra";
@@ -10,6 +11,8 @@ export interface RenderContext {
   mask: boolean;
   traceHeaders: string[];
   maxBodyLength: number;
+  /** 상대 시간 계산 기준(ms). 미지정이면 Date.now() */
+  now?: number;
 }
 
 export interface ReportField {
@@ -106,6 +109,22 @@ export const FIELDS: ReportField[] = [
     defaultOn: true,
     kind: "inline",
     extract: (r, ctx) => requestHeader(r, "authorization", ctx),
+  },
+  {
+    id: "tokenExpiry",
+    group: "request",
+    label: "토큰 만료",
+    description: "authorization이 JWT면 exp를 디코드해 표시 (토큰 원문 미노출)",
+    defaultOn: false,
+    kind: "inline",
+    extract: (r, ctx) => {
+      const auth = r.requestHeaders.authorization;
+      if (!auth) return undefined;
+      const expMs = jwtExpiryMs(auth);
+      if (expMs === undefined) return undefined;
+      const now = ctx.now ?? Date.now();
+      return `${formatDate(new Date(expMs).toISOString())} (${formatRelative(expMs, now)})`;
+    },
   },
   {
     id: "userAgent",

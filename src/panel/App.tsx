@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { isError, isPreflight, isXhrLike } from "../lib/classify";
+import { isApiLike, isDocument, isError, isPreflight } from "../lib/classify";
 import { buildReport } from "../lib/report";
 import { FieldPicker } from "./components/FieldPicker";
 import { ReportPreview } from "./components/ReportPreview";
@@ -24,6 +24,7 @@ export function App() {
   const [view, setView] = useState<View>("report");
   const [mask, setMask] = useState(true);
   const [showFields, setShowFields] = useState(true);
+  const [memos, setMemos] = useState<Record<string, string>>({});
 
   const effErrorsOnly = errorsOnly ?? settings?.errorsOnlyDefault ?? true;
   const effXhrOnly = xhrOnly ?? settings?.xhrOnlyDefault ?? true;
@@ -31,8 +32,10 @@ export function App() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return requests.filter((r) => {
-      if (settings?.hidePreflight && isPreflight(r)) return false;
-      if (effXhrOnly && !isXhrLike(r)) return false;
+      // 성공한 preflight만 숨김. 실패한 OPTIONS는 CORS 원인이므로 항상 표시
+      if (settings?.hidePreflight && isPreflight(r) && !isError(r)) return false;
+      // API 요청 + 에러난 페이지(document) 요청
+      if (effXhrOnly && !(isApiLike(r) || (isDocument(r) && isError(r)))) return false;
       if (effErrorsOnly && !isError(r)) return false;
       if (q && !r.fullUrl.toLowerCase().includes(q) && !r.method.toLowerCase().includes(q)) return false;
       return true;
@@ -52,14 +55,26 @@ export function App() {
     setMask(settings?.maskByDefault ?? true);
   };
 
-  const markdown = useMemo(() => {
+  const memo = selected ? memos[selected.id] ?? "" : "";
+  const setMemo = (text: string) => {
+    if (!selected) return;
+    setMemos((prev) => ({ ...prev, [selected.id]: text }));
+  };
+  const clearAll = () => {
+    clear();
+    setMemos({});
+    setSelectedId(null);
+  };
+
+  const report = useMemo(() => {
     if (!selected || !settings) return "";
-    return buildReport(selected, settings.selectedFieldIds, {
-      mask,
-      traceHeaders: settings.traceHeaders,
-      maxBodyLength: settings.maxBodyLength,
-    });
-  }, [selected, settings, mask]);
+    return buildReport(
+      selected,
+      settings.selectedFieldIds,
+      { mask, traceHeaders: settings.traceHeaders, maxBodyLength: settings.maxBodyLength },
+      { memo },
+    );
+  }, [selected, settings, mask, memo]);
 
   if (!settings) return <div className="empty">설정 불러오는 중…</div>;
 
@@ -83,11 +98,11 @@ export function App() {
             <input type="checkbox" checked={effErrorsOnly} onChange={(e) => setErrorsOnly(e.target.checked)} />
             에러만
           </label>
-          <label className="toggle">
+          <label className="toggle" title="XHR/fetch 요청과 에러가 난 페이지(document) 요청만 표시">
             <input type="checkbox" checked={effXhrOnly} onChange={(e) => setXhrOnly(e.target.checked)} />
-            XHR/fetch만
+            API만
           </label>
-          <button className="icon" title="목록 지우기" onClick={clear} aria-label="목록 지우기">
+          <button className="icon" title="목록 지우기" onClick={clearAll} aria-label="목록 지우기">
             🚫
           </button>
         </div>
@@ -124,7 +139,14 @@ export function App() {
         {view === "report" && (
           <div className="report-layout">
             {selected ? (
-              <ReportPreview markdown={markdown} mask={mask} onMaskChange={setMask} requestKey={selected.id} />
+              <ReportPreview
+                report={report}
+                mask={mask}
+                onMaskChange={setMask}
+                requestKey={selected.id}
+                memo={memo}
+                onMemoChange={setMemo}
+              />
             ) : (
               <div className="empty">왼쪽 목록에서 요청을 선택하세요.</div>
             )}
