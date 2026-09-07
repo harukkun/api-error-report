@@ -27,16 +27,20 @@ export function useNetworkCapture(preserveLog: boolean) {
         const next = [...prev, req];
         return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
       });
-      entry.getContent((content, encoding) => {
-        const mimeType = (entry as unknown as HarEntry).response.content.mimeType ?? "";
-        setRequests((prev) =>
-          prev.map((r) =>
-            r.id === id
-              ? { ...r, responseBody: { mimeType, text: content ?? "", encoding: encoding || undefined } }
-              : r,
-          ),
-        );
-      });
+      try {
+        entry.getContent((content, encoding) => {
+          const mimeType = (entry as unknown as HarEntry).response.content.mimeType ?? "";
+          setRequests((prev) =>
+            prev.map((r) =>
+              r.id === id
+                ? { ...r, responseBody: { mimeType, text: content ?? "", encoding: encoding || undefined } }
+                : r,
+            ),
+          );
+        });
+      } catch (err) {
+        console.warn("[network-error-report] getContent failed:", err);
+      }
     };
 
     const onNavigated = (url: string) => {

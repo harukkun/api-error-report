@@ -6,6 +6,7 @@ import { ReportPreview } from "./components/ReportPreview";
 import { RequestDetail } from "./components/RequestDetail";
 import { RequestList } from "./components/RequestList";
 import { SettingsPanel } from "./components/SettingsPanel";
+import { useExtensionAlive } from "./hooks/useExtensionAlive";
 import { useNetworkCapture } from "./hooks/useNetworkCapture";
 import { useSettings } from "./hooks/useSettings";
 
@@ -13,6 +14,7 @@ type View = "report" | "detail" | "settings";
 
 export function App() {
   const { settings, update, reset } = useSettings();
+  const extensionAlive = useExtensionAlive();
   const { requests, clear, isLive } = useNetworkCapture(settings?.preserveLog ?? false);
 
   const [errorsOnly, setErrorsOnly] = useState<boolean | null>(null);
@@ -63,6 +65,11 @@ export function App() {
 
   return (
     <div className="app">
+      {!extensionAlive && (
+        <div className="banner" role="alert">
+          확장 프로그램이 갱신되어 이 패널의 연결이 끊어졌습니다. 설정 저장과 새 요청 캡처가 동작하지 않으니 DevTools를 닫고 다시 열어주세요.
+        </div>
+      )}
       <aside className="left">
         <div className="toolbar">
           <input

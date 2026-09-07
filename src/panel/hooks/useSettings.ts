@@ -8,8 +8,14 @@ const hasChromeStorage = typeof chrome !== "undefined" && !!chrome.storage?.sync
 
 async function load(): Promise<Stored> {
   if (hasChromeStorage) {
-    const res = await chrome.storage.sync.get(SETTINGS_KEY);
-    return (res[SETTINGS_KEY] as Stored) ?? {};
+    try {
+      const res = await chrome.storage.sync.get(SETTINGS_KEY);
+      return (res[SETTINGS_KEY] as Stored) ?? {};
+    } catch (err) {
+      // 확장 컨텍스트 무효화 등: 기본값으로 진행
+      console.warn("[network-error-report] settings load failed:", err);
+      return {};
+    }
   }
   try {
     return JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}") as Stored;
@@ -20,7 +26,12 @@ async function load(): Promise<Stored> {
 
 async function persist(value: Stored): Promise<void> {
   if (hasChromeStorage) {
-    await chrome.storage.sync.set({ [SETTINGS_KEY]: value });
+    try {
+      await chrome.storage.sync.set({ [SETTINGS_KEY]: value });
+    } catch (err) {
+      // 확장이 갱신되어 옛 패널 컨텍스트가 무효화된 경우. 배너는 useExtensionAlive 가 표시
+      console.warn("[network-error-report] settings persist failed:", err);
+    }
     return;
   }
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(value));
