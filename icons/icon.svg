@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- 배경: 둥근 사각형 -->
+  <rect width="128" height="128" rx="28" fill="#1E2A3A"/>
+  <!-- 중괄호 (16px 렌더 시 data-s16 속성으로 획을 굵게) -->
+  <path d="M44,20 C32,20 30,26 30,36 V52 C30,58 26,62 20,64 C26,66 30,70 30,76 V92 C30,102 32,108 44,108" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" data-s16="stroke-width=14;d=M46,18 C32,18 30,24 30,34 V50 C30,57 24,61 12,64 C24,67 30,71 30,78 V94 C30,104 32,110 46,110"/>
+  <path d="M84,20 C96,20 98,26 98,36 V52 C98,58 102,62 108,64 C102,66 98,70 98,76 V92 C98,102 96,108 84,108" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" data-s16="stroke-width=14;d=M82,18 C96,18 98,24 98,34 V50 C98,57 104,61 116,64 C104,67 98,71 98,78 V94 C98,104 96,110 82,110"/>
+  <!-- 느낌표 -->
+  <rect x="57.5" y="36" width="13" height="40" rx="6.5" fill="#E5484D" data-s16="x=55.5;width=17;rx=8.5;y=30;height=38"/>
+  <circle cx="64" cy="91" r="7.5" fill="#E5484D" data-s16="r=9.5;cy=95"/>
+</svg>

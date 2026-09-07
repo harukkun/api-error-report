@@ -28,10 +28,15 @@ DevTools가 열려 있는 동안 발생한 요청만 캡처됩니다 (Network �
 
 `src/lib/fields.ts`의 `FIELDS` 배열에 항목을 추가하면 체크박스와 리포트에 자동 반영됩니다.
 
+## 아이콘
+
+`icons/icon.svg`가 원본입니다. 수정 후 `npm run icons`를 실행하면 16/48/128 PNG가 다시 생성됩니다. 16px 전용 굵기 조정은 SVG 요소의 `data-s16` 속성으로 지정합니다.
+
 ## 개발
 
 ```bash
 npm test            # vitest
+npm run icons       # icons/icon.svg → PNG 3종
 npm run build       # dist/ 생성
 npx vite preview    # dist/src/panel/panel.html 을 브라우저에서 목 데이터로 확인
 ```
