@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isApiLike, isDocument, isError, isPreflight } from "../lib/classify";
 import { buildReport } from "../lib/report";
 import { FieldPicker } from "./components/FieldPicker";
@@ -11,6 +11,13 @@ import { useNetworkCapture } from "./hooks/useNetworkCapture";
 import { useSettings } from "./hooks/useSettings";
 
 type View = "report" | "detail" | "settings";
+
+/** 스토어 스크린샷용 데모 모드. 확장 밖 목 데이터일 때 ?demo=1 로 활성화 */
+const DEMO = {
+  requestId: "m2",
+  memo: "마이페이지 > 회원탈퇴 버튼 클릭 시 발생",
+  extraFields: ["startedAt", "tokenExpiry", "traceHeaders"],
+};
 
 export function App() {
   const { settings, update, reset } = useSettings();
@@ -25,6 +32,17 @@ export function App() {
   const [mask, setMask] = useState(true);
   const [showFields, setShowFields] = useState(true);
   const [memos, setMemos] = useState<Record<string, string>>({});
+  const [demoFieldIds, setDemoFieldIds] = useState<string[] | null>(null);
+  const demoApplied = useRef(false);
+  const isDemo = !isLive && new URLSearchParams(window.location.search).has("demo");
+
+  useEffect(() => {
+    if (!isDemo || !settings || demoApplied.current) return;
+    demoApplied.current = true;
+    setSelectedId(DEMO.requestId);
+    setMemos({ [DEMO.requestId]: DEMO.memo });
+    setDemoFieldIds(Array.from(new Set([...settings.selectedFieldIds, ...DEMO.extraFields])));
+  }, [isDemo, settings]);
 
   const effErrorsOnly = errorsOnly ?? settings?.errorsOnlyDefault ?? true;
   const effXhrOnly = xhrOnly ?? settings?.xhrOnlyDefault ?? true;
@@ -66,15 +84,17 @@ export function App() {
     setSelectedId(null);
   };
 
+  const fieldIds = demoFieldIds ?? settings?.selectedFieldIds ?? [];
+
   const report = useMemo(() => {
     if (!selected || !settings) return "";
     return buildReport(
       selected,
-      settings.selectedFieldIds,
+      fieldIds,
       { mask, traceHeaders: settings.traceHeaders, maxBodyLength: settings.maxBodyLength },
       { memo },
     );
-  }, [selected, settings, mask, memo]);
+  }, [selected, settings, fieldIds, mask, memo]);
 
   if (!settings) return <div className="empty">설정 불러오는 중…</div>;
 
@@ -151,7 +171,13 @@ export function App() {
               <div className="empty">왼쪽 목록에서 요청을 선택하세요.</div>
             )}
             {showFields && (
-              <FieldPicker selected={settings.selectedFieldIds} onChange={(ids) => update({ selectedFieldIds: ids })} />
+              <FieldPicker
+                selected={fieldIds}
+                onChange={(ids) => {
+                  setDemoFieldIds(null);
+                  update({ selectedFieldIds: ids });
+                }}
+              />
             )}
           </div>
         )}

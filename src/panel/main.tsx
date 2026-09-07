@@ -7,6 +7,9 @@ import "./styles.css";
 function resolveTheme(): "dark" | "light" {
   const devtoolsTheme = typeof chrome !== "undefined" ? chrome.devtools?.panels?.themeName : undefined;
   if (devtoolsTheme) return devtoolsTheme === "dark" ? "dark" : "light";
+  // 확장 밖(미리보기/스크린샷)에서는 ?theme= 로 강제 가능
+  const forced = new URLSearchParams(window.location.search).get("theme");
+  if (forced === "dark" || forced === "light") return forced;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 document.documentElement.dataset.theme = resolveTheme();

@@ -39,7 +39,13 @@ DevTools가 열려 있는 동안 발생한 요청만 캡처됩니다 (Network �
 
 ```bash
 npm test            # vitest
-npm run icons       # icons/icon.svg → PNG 3종
-npm run build       # dist/ 생성
+npm run icons        # icons/icon.svg → PNG 3종
+npm run build        # dist/ 생성
+npm run package      # dist → release/network-error-report-<version>.zip (버전 일치 검사 포함)
+npm run store-assets # store/ 프로모션 타일 + 스크린샷 생성 (Chrome headless 사용)
 npx vite preview    # dist/src/panel/panel.html 을 브라우저에서 목 데이터로 확인
 ```
+
+## 웹 스토어 배포
+
+사내용(비공개 unlisted) 등록 절차와 대시보드에 붙일 텍스트는 [docs/STORE_LISTING.md](docs/STORE_LISTING.md), 개인정보처리방침은 [PRIVACY.md](PRIVACY.md)를 참고하세요.
